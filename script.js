@@ -381,14 +381,16 @@ function buildWelcomeSlide() {
 
 function buildMemoriesSlide() {
   // Cards flip on hover (or keyboard focus) via CSS — see .memory-card:hover / :focus-within
-  // in style.css. No click handling here on purpose.
+  // in style.css. On touch devices there's no such thing as hover, so we fall back
+  // to tap-to-flip there only — desktop/mouse behavior is untouched.
+  const isTouchDevice = window.matchMedia("(hover: none), (pointer: coarse)").matches;
   const grid = document.getElementById("memoriesGrid");
   CONFIG.memories.forEach((memory) => {
     const card = document.createElement("article");
     card.className = "memory-card";
     card.setAttribute("role", "listitem");
     card.setAttribute("tabindex", "0");
-    card.setAttribute("aria-label", `Memory: ${memory.title}. Hover or focus to reveal.`);
+    card.setAttribute("aria-label", `Memory: ${memory.title}. ${isTouchDevice ? "Tap" : "Hover or focus"} to reveal.`);
     card.innerHTML = `
       <div class="memory-card-inner">
         <div class="memory-card-face memory-card-front">
@@ -403,6 +405,9 @@ function buildMemoriesSlide() {
         </div>
       </div>
     `;
+    if (isTouchDevice) {
+      card.addEventListener("click", () => card.classList.toggle("flipped"));
+    }
     grid.appendChild(card);
   });
 }
@@ -609,10 +614,8 @@ function renderQuizComplete() {
       <p class="quiz-complete-sub">Every answer, right or wrong, just proved you showed up. That's all that ever mattered.</p>
     </div>
   `;
-
-  setTimeout(() => {
-    if (state.currentSlide === 1) goToSlide(2);
-  }, 2200);
+  // Stay on the score screen until the user clicks Next (already enabled from the
+  // last answered question) — no auto-advance.
 }
 
 function spawnQuizConfetti(x, y) {
